@@ -1,5 +1,5 @@
 import math
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +8,7 @@ from matplotlib.axes import Axes
 from matplotlib.axis import XAxis, YAxis
 from matplotlib.backends.backend_qt5 import FigureManagerQT
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.quiver import Quiver
 from matplotlib.text import Text
 from matplotlib.ticker import MultipleLocator
@@ -50,6 +51,9 @@ def format_plt_2(plt_2: Axes):
     plt_2.set_xlabel("Theta")
     plt_2.set_ylabel("Cross Product")
 
+    plt_2.set_ylim([-17, 17])
+    plt_2.set_xlim([-math.pi / 8, math.pi + (math.pi / 8)])
+
 
 def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
     x_1, y_1 = (MAG_1 *
@@ -78,6 +82,14 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
     return (arrows, info)
 
 
+def plot_cross_prod_line(axes: Axes) -> Line2D:
+    line: Line2D = plt.plot([], [], "-", lw=2, color="b")[0]
+
+    print(f"orig {line=}")
+
+    return line
+
+
 def main():
 
     format_plt()
@@ -90,12 +102,19 @@ def main():
     format_plt_2(plt_2)
 
     (arrows, info) = plot_quiver(plt_1)
+    line = plot_cross_prod_line(plt_2)
+
+    x_data = []
+    y_data = []
+
+    # Include line_dict and info under plt_x in future
+    # plt_dict = {"plt_1": plt_1, "plt_2": plt_2}
 
     anim = FuncAnimation(
         fig,
         animate,
-        init_func=init_anim_factory(arrows, info),
-        fargs=(arrows, plt_1, info),
+        init_func=init_anim_factory(arrows, info, line),
+        fargs=(arrows, info, line, x_data, y_data),
         frames=np.linspace(0, math.pi, 128),
         interval=1000 / 30,
         repeat=False)
@@ -108,13 +127,14 @@ def main():
     plt.show()
 
 
-def init_anim_factory(arrows: Quiver, info: Text):
+def init_anim_factory(arrows: Quiver, info: Text, line: Line2D):
     def init_anim():
-        return [arrows, info]
+        return [arrows, info, line]
     return init_anim
 
 
-def update_plt_1(plt_1: Axes, arrows: Quiver, info: Text, theta: float):
+def update_plt_1(arrows: Quiver,
+                 info: Text, theta: float) -> float:
     x_1, y_1 = (MAG_1 *
                 math.cos(theta), MAG_1 *
                 math.sin(theta))
@@ -131,11 +151,25 @@ def update_plt_1(plt_1: Axes, arrows: Quiver, info: Text, theta: float):
 
     arrows.set_UVC(x_comps, y_comps)
 
+    return cross_prod
 
-def animate(theta: float, arrows: Quiver, plt_1: Axes, info: Text):
-    update_plt_1(plt_1, arrows, info, theta)
 
-    return [arrows, info]
+def update_plt_2(line, theta, cross_prod, x_data, y_data):
+
+    x_data.append(theta)
+    y_data.append(cross_prod)
+
+    line.set_data(x_data, y_data)
+
+    return line
+
+
+def animate(theta: float, arrows: Quiver, info: Text, line, x_data, y_data):
+    cross_prod: float = update_plt_1(arrows, info, theta)
+
+    update_plt_2(line, theta, cross_prod, x_data, y_data)
+
+    return [arrows, info, line]
 
 
 if __name__ == "__main__":
