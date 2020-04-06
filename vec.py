@@ -1,21 +1,24 @@
 import math
-from typing import Callable, List, TypedDict, Optional, Tuple
-from matplotlib.artist import Artist
+from typing import Callable, List, Optional, Tuple, TypedDict
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.axis import XAxis, YAxis
 from matplotlib.backends.backend_qt5 import FigureManagerQT
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from matplotlib.quiver import Quiver
 from matplotlib.text import Text
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 
 # TODO
-# Add latex to cross-prod x-axis
+# Types
+# Docstrings
+# Extract formatting thing to it's own file?
 # Make graph sizing generated?
 
 MAG_1 = 4
@@ -28,38 +31,64 @@ class LineDict(TypedDict):
     y_data: List[float]
 
 
-def format_pi(denominator):
-    def gcd(a, b):
-        while b:
-            a, b = b, a % b
-        return a
+def format_pi(denominator, base=math.pi, symbol=r"\pi"):
+    def _gcd(int_1, int_2):
+        while int_2:
+            int_1, int_2 = int_2, int_1 % int_2
+        return int_1
 
     def _fmt(theta, _):
-        den = denominator
-        num = np.int(np.rint(den * theta / np.pi))
-        com = gcd(num, den)
-        num, den = (int(num / com), int(den / com))
-        if den == 1:
-            if num == 0:
-                return 0
+        denom = denominator
+        # Find raw numerator by finding how many (denom)s are in (theta)
+        # eg. How many pi/4 are in 1.5pi? (6)
+        numer = np.int(np.rint(denom * theta / base))
 
-            if num == 1:
-                return "\u03C0"
+        # Simplify the raw (numer) to lowest eg. 6/4 to 3/2
+        com = _gcd(numer, denom)
 
-            if num == -1:
-                return "-\u03C0"
+        # Simplify by dividing raw (numer) and (denom) by GCD
+        (numer, denom) = (int(numer / com), int(denom / com))
 
-            return f"{num}\u03C0"
+        # If a multiple of base
+        if denom == 1:
+            if numer == 0:
+                return r"$0$"
+
+            if numer == 1:
+                return r"${0}$".format(symbol)
+
+            if numer == -1:
+                return r"$-{0}$".format(symbol)
+
+            # Just (multiple) * (base)
+            return r"${0}{1}$".format(numer, symbol)
+        # between multiples of base
         else:
-            if num == 1:
-                return f"\u03C0/{den}"
+            # Less than one-whole integer multiple
+            if numer == 1:
+                return r"$\frac{{{1}}}{{{0}}}$".format(denom, symbol)
 
-            if num == -1:
-                return f"-\u03C0/{den}"
+            if numer == -1:
+                return r"$\frac{{-{1}}}{{{0}}}$".format(denom, symbol)
 
-            return f"{num}\u03C0/{den}"
+            # Simplified ((numer)(base))/(denom)
+            return r"$\frac{{{0}{2}}}{{{1}}}$".format(numer, denom, symbol)
 
     return _fmt
+
+
+class Multiple(object):
+    def __init__(self, denominator, base=math.pi, symbol=r"\pi"):
+        self.denominator = denominator
+        self.base = base
+        self.symbol = symbol
+
+    def locator(self):
+        return MultipleLocator(self.base / self.denominator)
+
+    def formatter(self):
+        return FuncFormatter(
+            format_pi(self.denominator, self.base, self.symbol))
 
 
 def setup_plt():
@@ -71,6 +100,11 @@ def format_plt():
 
 
 def format_plt_1(plt_1: Axes):
+    v_patch = Patch(color="r", label=r"$\vec{v}$")
+    w_patch = Patch(color="g", label=r"$\vec{w}$")
+
+    plt_1.legend(handles=[v_patch, w_patch])
+
     x_axis: XAxis = plt_1.get_xaxis()
     y_axis: YAxis = plt_1.get_yaxis()
 
@@ -83,7 +117,7 @@ def format_plt_1(plt_1: Axes):
     plt_1.grid(axis="both", which="major", lw=1.5)
     plt_1.grid(axis="both", which="minor", lw=0.5)
 
-    plt_1.set(xlabel="X", ylabel="Y", title="Vectors plotted on grid")
+    plt_1.set(xlabel="$X$", ylabel="$Y$", title="Vectors plotted on grid")
 
     plt_1.set_ylim([-5, 5])
     plt_1.set_xlim([-5, 5])
@@ -92,21 +126,20 @@ def format_plt_1(plt_1: Axes):
 def format_plt_2(plt_2: Axes):
     x_axis: XAxis = plt_2.get_xaxis()
     plt_2.set(
-        xlabel=r"Theta (radians)",
+        xlabel=r"$\theta$ (radians)",
         ylabel="Cross Product",
         title="Cross Product Theta Relationship")
 
-    x_maj_loc: MultipleLocator = MultipleLocator(math.pi / 4)
-    x_axis.set_major_locator(x_maj_loc)
+    pi_formatter: Multiple = Multiple(4)
+
+    x_axis.set_major_locator(pi_formatter.locator())
+    x_axis.set_major_formatter(pi_formatter.formatter())
 
     x_min_loc: MultipleLocator = MultipleLocator(math.pi / 12)
     x_axis.set_minor_locator(x_min_loc)
 
-    x_formatter: FuncFormatter = FuncFormatter(format_pi(4))
-    x_axis.set_major_formatter(x_formatter)
-
     plt_2.set_ylim([-17, 17])
-    plt_2.set_xlim([-math.pi / 8, math.pi + (math.pi / 8)])
+    plt_2.set_xlim([- math.pi / 8, math.pi + (math.pi / 8)])
 
 
 def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
@@ -131,13 +164,18 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
         scale=1,
         color=("r", "g"))
 
-    info: Text = axes.text(0, 4, f"Cross Product: 0")
+    info: Text = axes.text(-4, 4, f"Cross Product: 0")
 
     return (arrows, info)
 
 
 def plot_cross_prod_line(axes: Axes) -> Line2D:
-    line: Line2D = plt.plot([], [], "-", lw=2, color="b")[0]
+    line: Line2D = plt.plot(
+        [],
+        [],
+        lw=2,
+        color="#0055ffff",
+        label="cross v. theta")[0]
 
     return line
 
