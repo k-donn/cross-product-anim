@@ -31,53 +31,7 @@ class LineDict(TypedDict):
     y_data: List[float]
 
 
-def format_pi(denominator, base=math.pi, symbol=r"\pi"):
-    def _gcd(int_1, int_2):
-        while int_2:
-            int_1, int_2 = int_2, int_1 % int_2
-        return int_1
-
-    def _fmt(theta, _):
-        denom = denominator
-        # Find raw numerator by finding how many (denom)s are in (theta)
-        # eg. How many pi/4 are in 1.5pi? (6)
-        numer = np.int(np.rint(denom * theta / base))
-
-        # Simplify the raw (numer) to lowest eg. 6/4 to 3/2
-        com = _gcd(numer, denom)
-
-        # Simplify by dividing raw (numer) and (denom) by GCD
-        (numer, denom) = (int(numer / com), int(denom / com))
-
-        # If a multiple of base
-        if denom == 1:
-            if numer == 0:
-                return r"$0$"
-
-            if numer == 1:
-                return r"${0}$".format(symbol)
-
-            if numer == -1:
-                return r"$-{0}$".format(symbol)
-
-            # Just (multiple) * (base)
-            return r"${0}{1}$".format(numer, symbol)
-        # between multiples of base
-        else:
-            # Less than one-whole integer multiple
-            if numer == 1:
-                return r"$\frac{{{1}}}{{{0}}}$".format(denom, symbol)
-
-            if numer == -1:
-                return r"$\frac{{-{1}}}{{{0}}}$".format(denom, symbol)
-
-            # Simplified ((numer)(base))/(denom)
-            return r"$\frac{{{0}{2}}}{{{1}}}$".format(numer, denom, symbol)
-
-    return _fmt
-
-
-class Multiple(object):
+class MultiplePi:
     def __init__(self, denominator, base=math.pi, symbol=r"\pi"):
         self.denominator = denominator
         self.base = base
@@ -87,8 +41,54 @@ class Multiple(object):
         return MultipleLocator(self.base / self.denominator)
 
     def formatter(self):
-        return FuncFormatter(
-            format_pi(self.denominator, self.base, self.symbol))
+        return FuncFormatter(self._make_formatter())
+
+    def _make_formatter(self):
+
+        def _fmt(theta, _):
+            denom = self.denominator
+            # Find raw numerator by finding how many (denom)s are in (theta)
+            # eg. How many pi/4 are in 1.5pi? (6)
+            numer = np.int(np.rint(denom * theta / self.base))
+
+            # Simplify the raw (numer) to lowest eg. 6/4 to 3/2
+            com = self._gcd(numer, denom)
+
+            # Simplify by dividing raw (numer) and (denom) by GCD
+            (numer, denom) = (int(numer / com), int(denom / com))
+
+            # If a multiple of base
+            if denom == 1:
+                if numer == 0:
+                    return r"$0$"
+
+                if numer == 1:
+                    return r"${0}$".format(self.symbol)
+
+                if numer == -1:
+                    return r"$-{0}$".format(self.symbol)
+
+                # Just (multiple) * (base)
+                return r"${0}{1}$".format(numer, self.symbol)
+            # between multiples of base
+            else:
+                # Less than one-whole integer multiple
+                if numer == 1:
+                    return r"$\frac{{{1}}}{{{0}}}$".format(denom, self.symbol)
+
+                if numer == -1:
+                    return r"$\frac{{-{1}}}{{{0}}}$".format(denom, self.symbol)
+
+                # Simplified ((numer) * (base))/(denom)
+                return r"$\frac{{{0}{2}}}{{{1}}}$".format(
+                    numer, denom, self.symbol)
+
+        return _fmt
+
+    def _gcd(self, int_1, int_2):
+        while int_2:
+            int_1, int_2 = int_2, int_1 % int_2
+        return int_1
 
 
 def setup_plt():
@@ -130,7 +130,7 @@ def format_plt_2(plt_2: Axes):
         ylabel="Cross Product",
         title="Cross Product Theta Relationship")
 
-    pi_formatter: Multiple = Multiple(4)
+    pi_formatter: MultiplePi = MultiplePi(4)
 
     x_axis.set_major_locator(pi_formatter.locator())
     x_axis.set_major_formatter(pi_formatter.formatter())
