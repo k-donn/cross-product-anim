@@ -1,5 +1,6 @@
 import math
-from typing import List, Optional, Tuple
+from typing import Callable, List, TypedDict, Optional, Tuple
+from matplotlib.artist import Artist
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,18 +12,62 @@ from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.quiver import Quiver
 from matplotlib.text import Text
-from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import FuncFormatter, MultipleLocator
 
 # TODO
-# Add graph of cross-product as a function of theta
+# Add latex to cross-prod x-axis
 # Make graph sizing generated?
 
 MAG_1 = 4
 MAG_2 = 3
 
 
-def format_plt():
+class LineDict(TypedDict):
+    line: Line2D
+    x_data: List[float]
+    y_data: List[float]
+
+
+def format_pi(denominator):
+    def gcd(a, b):
+        while b:
+            a, b = b, a % b
+        return a
+
+    def _fmt(theta, _):
+        den = denominator
+        num = np.int(np.rint(den * theta / np.pi))
+        com = gcd(num, den)
+        num, den = (int(num / com), int(den / com))
+        if den == 1:
+            if num == 0:
+                return 0
+
+            if num == 1:
+                return "\u03C0"
+
+            if num == -1:
+                return "-\u03C0"
+
+            return f"{num}\u03C0"
+        else:
+            if num == 1:
+                return f"\u03C0/{den}"
+
+            if num == -1:
+                return f"-\u03C0/{den}"
+
+            return f"{num}\u03C0/{den}"
+
+    return _fmt
+
+
+def setup_plt():
     plt.style.use("ggplot")
+
+
+def format_plt():
+    plt.tight_layout()
 
 
 def format_plt_1(plt_1: Axes):
@@ -38,18 +83,27 @@ def format_plt_1(plt_1: Axes):
     plt_1.grid(axis="both", which="major", lw=1.5)
     plt_1.grid(axis="both", which="minor", lw=0.5)
 
-    plt_1.set_xlabel("X")
-    plt_1.set_ylabel("Y")
+    plt_1.set(xlabel="X", ylabel="Y", title="Vectors plotted on grid")
 
     plt_1.set_ylim([-5, 5])
     plt_1.set_xlim([-5, 5])
 
-    plt_1.set_title("Vectors plotted on grid.")
-
 
 def format_plt_2(plt_2: Axes):
-    plt_2.set_xlabel("Theta")
-    plt_2.set_ylabel("Cross Product")
+    x_axis: XAxis = plt_2.get_xaxis()
+    plt_2.set(
+        xlabel=r"Theta (radians)",
+        ylabel="Cross Product",
+        title="Cross Product Theta Relationship")
+
+    x_maj_loc: MultipleLocator = MultipleLocator(math.pi / 4)
+    x_axis.set_major_locator(x_maj_loc)
+
+    x_min_loc: MultipleLocator = MultipleLocator(math.pi / 12)
+    x_axis.set_minor_locator(x_min_loc)
+
+    x_formatter: FuncFormatter = FuncFormatter(format_pi(4))
+    x_axis.set_major_formatter(x_formatter)
 
     plt_2.set_ylim([-17, 17])
     plt_2.set_xlim([-math.pi / 8, math.pi + (math.pi / 8)])
@@ -85,14 +139,12 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
 def plot_cross_prod_line(axes: Axes) -> Line2D:
     line: Line2D = plt.plot([], [], "-", lw=2, color="b")[0]
 
-    print(f"orig {line=}")
-
     return line
 
 
 def main():
 
-    format_plt()
+    setup_plt()
 
     fig: Figure = plt.figure(figsize=(9, 4.5), dpi=140)
     plt_1: Axes = fig.add_subplot(121)
@@ -104,31 +156,32 @@ def main():
     (arrows, info) = plot_quiver(plt_1)
     line = plot_cross_prod_line(plt_2)
 
-    x_data = []
-    y_data = []
-
     # Include line_dict and info under plt_x in future
     # plt_dict = {"plt_1": plt_1, "plt_2": plt_2}
+
+    line_dict: LineDict = {"line": line, "x_data": [], "y_data": []}
+
+    format_plt()
 
     anim = FuncAnimation(
         fig,
         animate,
         init_func=init_anim_factory(arrows, info, line),
-        fargs=(arrows, info, line, x_data, y_data),
+        fargs=(arrows, info, line_dict),
         frames=np.linspace(0, math.pi, 128),
         interval=1000 / 30,
         repeat=False)
 
     fig_manager: Optional[FigureManagerQT] = plt.get_current_fig_manager()
     if fig_manager is not None:
-        fig_manager.set_window_title("Crosss Product Animation")
+        fig_manager.set_window_title("Cross Product Animation")
 
     plt.draw()
     plt.show()
 
 
-def init_anim_factory(arrows: Quiver, info: Text, line: Line2D):
-    def init_anim():
+def init_anim_factory(arrows: Quiver, info: Text, line: Line2D) -> Callable:
+    def init_anim() -> List[Artist]:
         return [arrows, info, line]
     return init_anim
 
@@ -154,22 +207,21 @@ def update_plt_1(arrows: Quiver,
     return cross_prod
 
 
-def update_plt_2(line, theta, cross_prod, x_data, y_data):
+def update_plt_2(line_dict: LineDict, theta, cross_prod):
+    line_dict["x_data"].append(theta)
+    line_dict["y_data"].append(cross_prod)
 
-    x_data.append(theta)
-    y_data.append(cross_prod)
+    line_dict["line"].set_data(line_dict["x_data"], line_dict["y_data"])
 
-    line.set_data(x_data, y_data)
-
-    return line
+    return line_dict["line"]
 
 
-def animate(theta: float, arrows: Quiver, info: Text, line, x_data, y_data):
-    cross_prod: float = update_plt_1(arrows, info, theta)
+def animate(theta: float, arrows: Quiver, info: Text, line_dict: LineDict):
+    cross_prod = update_plt_1(arrows, info, theta)
 
-    update_plt_2(line, theta, cross_prod, x_data, y_data)
+    update_plt_2(line_dict, theta, cross_prod)
 
-    return [arrows, info, line]
+    return [arrows, info, line_dict["line"]]
 
 
 if __name__ == "__main__":
