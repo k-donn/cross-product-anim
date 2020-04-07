@@ -1,6 +1,7 @@
 import math
 from typing import Callable, List, Optional, Tuple, TypedDict
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
@@ -18,7 +19,7 @@ from matplotlib.ticker import FuncFormatter, MultipleLocator
 # TODO
 # Types
 # Docstrings
-# Extract formatting thing to it's own file?
+# Extract formatting class to it's own file?
 # Make graph sizing generated?
 
 MAG_1 = 4
@@ -57,7 +58,7 @@ class MultiplePi:
             # Simplify by dividing raw (numer) and (denom) by GCD
             (numer, denom) = (int(numer / com), int(denom / com))
 
-            # If a multiple of base
+            # If an integer of base
             if denom == 1:
                 if numer == 0:
                     return r"$0$"
@@ -71,27 +72,29 @@ class MultiplePi:
                 # Just (multiple) * (base)
                 return r"${0}{1}$".format(numer, self.symbol)
             # between multiples of base
-            else:
-                # Less than one-whole integer multiple
-                if numer == 1:
-                    return r"$\frac{{{1}}}{{{0}}}$".format(denom, self.symbol)
 
-                if numer == -1:
-                    return r"$\frac{{-{1}}}{{{0}}}$".format(denom, self.symbol)
+            # Less than one integer multiple
+            if numer == 1:
+                return r"$\frac{{{1}}}{{{0}}}$".format(denom, self.symbol)
 
-                # Simplified ((numer) * (base))/(denom)
-                return r"$\frac{{{0}{2}}}{{{1}}}$".format(
-                    numer, denom, self.symbol)
+            if numer == -1:
+                return r"$\frac{{-{1}}}{{{0}}}$".format(denom, self.symbol)
+
+            # Simplified ((numer) * (base))/(denom)
+            return r"$\frac{{{0}{2}}}{{{1}}}$".format(
+                numer, denom, self.symbol)
 
         return _fmt
 
-    def _gcd(self, int_1, int_2):
+    @staticmethod
+    def _gcd(int_1, int_2):
         while int_2:
             int_1, int_2 = int_2, int_1 % int_2
         return int_1
 
 
 def setup_plt():
+    mpl.rcParams["font.family"] = "Poppins"
     plt.style.use("ggplot")
 
 
@@ -206,7 +209,7 @@ def main():
         animate,
         init_func=init_anim_factory(arrows, info, line),
         fargs=(arrows, info, line_dict),
-        frames=np.linspace(0, math.pi, 128),
+        frames=np.linspace(0, math.pi / 3, 128),
         interval=1000 / 30,
         repeat=False)
 
