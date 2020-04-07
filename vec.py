@@ -1,5 +1,16 @@
+"""
+Show an animation of cross products.
+
+usage: python3.8 vec.py
+
+One plot shows the vectors rotating about the origin and displays their cross product.
+Adjacent to that, a plot displays the cross product as a function of
+theta (absolute value of each vectors' angles above/below the X-axis).
+
+Each of the vectors' magnitudes remain constant and the only transformation is rotation.
+"""
 import math
-from typing import Callable, List, Optional, Tuple, TypedDict
+from typing import Any, Callable, List, Optional, Tuple, TypedDict
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -17,9 +28,9 @@ from matplotlib.text import Text
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 
 # TODO
-# Types
 # Docstrings
-# Extract formatting class to it's own file?
+# Extract formatting class to its own file?
+# Command line args for vectors' magnitudes?
 # Make graph sizing generated?
 
 MAG_1 = 4
@@ -33,20 +44,21 @@ class LineDict(TypedDict):
 
 
 class MultiplePi:
-    def __init__(self, denominator, base=math.pi, symbol=r"\pi"):
+    def __init__(self, denominator: int, base: float = math.pi,
+                 symbol: str = r"\pi"):
         self.denominator = denominator
         self.base = base
         self.symbol = symbol
 
-    def locator(self):
+    def locator(self) -> MultipleLocator:
         return MultipleLocator(self.base / self.denominator)
 
-    def formatter(self):
+    def formatter(self) -> FuncFormatter:
         return FuncFormatter(self._make_formatter())
 
-    def _make_formatter(self):
+    def _make_formatter(self) -> Callable[[float, Any], str]:
 
-        def _fmt(theta, _):
+        def _fmt(theta, _) -> str:
             denom = self.denominator
             # Find raw numerator by finding how many (denom)s are in (theta)
             # eg. How many pi/4 are in 1.5pi? (6)
@@ -87,22 +99,22 @@ class MultiplePi:
         return _fmt
 
     @staticmethod
-    def _gcd(int_1, int_2):
+    def _gcd(int_1: float, int_2: float) -> float:
         while int_2:
             int_1, int_2 = int_2, int_1 % int_2
         return int_1
 
 
-def setup_plt():
+def setup_plt() -> None:
     mpl.rcParams["font.family"] = "Poppins"
     plt.style.use("ggplot")
 
 
-def format_plt():
+def format_plt() -> None:
     plt.tight_layout()
 
 
-def format_plt_1(plt_1: Axes):
+def format_plt_1(plt_1: Axes) -> None:
     v_patch = Patch(color="r", label=r"$\vec{v}$")
     w_patch = Patch(color="g", label=r"$\vec{w}$")
 
@@ -126,7 +138,7 @@ def format_plt_1(plt_1: Axes):
     plt_1.set_xlim([-5, 5])
 
 
-def format_plt_2(plt_2: Axes):
+def format_plt_2(plt_2: Axes) -> None:
     x_axis: XAxis = plt_2.get_xaxis()
     plt_2.set(
         xlabel=r"$\theta$ (radians)",
@@ -183,7 +195,7 @@ def plot_cross_prod_line(axes: Axes) -> Line2D:
     return line
 
 
-def main():
+def main() -> None:
 
     setup_plt()
 
