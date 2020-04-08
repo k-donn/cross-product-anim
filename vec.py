@@ -28,11 +28,13 @@ from matplotlib.text import Text
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 
 # TODO
-# Docstrings
 # Add bound checking for GCD
+# Refactor out x_1, x_... calculation to function
+# Fix formatting for newlines in docstrings
 # Extract formatting class to its own file?
 # Command line args for vectors' magnitudes?
 # Make graph sizing generated?
+# Move main() initialization to init_anim()
 
 MAG_1 = 4
 MAG_2 = 3
@@ -47,21 +49,25 @@ class LineDict(TypedDict):
 
 
 class MultiplePi:
-    """Handle formatting of numbers as multiples of pi."""
+    r"""
+    Handle formatting of numbers as multiples of pi.
+
+    Attributes
+    ----------
+    denominator : int
+        The denominator of the multiples desired.
+
+    base : float, optional
+        Number to find multiples of, by default math.pi
+
+    symbol : str, optional
+        Symbol to place in string of multiple, by default r"\pi
+
+    """
 
     def __init__(self, denominator: int, base: float = math.pi,
                  symbol: str = r"\pi"):
-        r"""Initialize self.
-
-        Parameters
-        ----------
-        denominator : int
-            The denominator of the multiples desired.
-        base : float, optional
-            Number to find multiples of, by default math.pi
-        symbol : str, optional
-            Symbol to place in string of multiple, by default r"\pi"
-        """
+        """Initialize self."""
         self.denominator = denominator
         self.base = base
         self.symbol = symbol
@@ -180,6 +186,13 @@ def format_plt() -> None:
 
 
 def format_plt_1(plt_1: Axes) -> None:
+    """Format the vector plot after it has been rendered.
+
+    Parameters
+    ----------
+    plt_1 : Axes
+        The Axes object describing the subplot
+    """
     v_patch = Patch(color="r", label=r"$\vec{v}$")
     w_patch = Patch(color="g", label=r"$\vec{w}$")
 
@@ -204,6 +217,13 @@ def format_plt_1(plt_1: Axes) -> None:
 
 
 def format_plt_2(plt_2: Axes) -> None:
+    """Format the cross product plot after it has been rendered.
+
+    Parameters
+    ----------
+    plt_2 : Axes
+        The Axes object describing the subplot
+    """
     x_axis: XAxis = plt_2.get_xaxis()
     plt_2.set(
         xlabel=r"$\theta$ (radians)",
@@ -223,6 +243,18 @@ def format_plt_2(plt_2: Axes) -> None:
 
 
 def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
+    """Plot the vector arrows on the plot.
+
+    Parameters
+    ----------
+    axes : Axes
+        The object describing the subplot
+
+    Returns
+    -------
+    Tuple[Quiver, Text]
+        The quiver objects as well as the cross product text
+    """
     x_1, y_1 = (MAG_1 *
                 math.cos(0), MAG_1 *
                 math.sin(0))
@@ -230,7 +262,6 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
                 math.cos(0), MAG_2 *
                 math.sin(0))
 
-    # Remeber, U is all of the x-components not the first vector. V for Y
     vecs: np.ndarray = np.array([[0, 0, x_1, y_1], [0, 0, x_2, y_2]])
     x_origins, y_origins, x_comps, y_comps = zip(*vecs)
 
@@ -249,63 +280,73 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
     return (arrows, info)
 
 
-def plot_cross_prod_line(axes: Axes) -> Line2D:
-    line: Line2D = plt.plot(
+def plot_cross_prod_line(plt_2: Axes) -> Line2D:
+    """Plot the cross product value as a function of theta.
+
+    Parameters
+    ----------
+    plt_2 : Axes
+        The Axes object describing the graph
+
+    Returns
+    -------
+    Line2D
+        The object describing the plotted line
+    """
+    artists: List[Any] = plt_2.plot(
         [],
         [],
         lw=2,
         color="#0055ffff",
-        label="cross v. theta")[0]
+        label="cross v. theta")
+
+    line: Line2D = artists[0]
 
     return line
 
 
-def main() -> None:
+def init_anim_factory(arrows: Quiver, info: Text,
+                      line: Line2D) -> Callable[..., List[Artist]]:
+    """Return a function that has all of the initially plotted artists on the subplots.
 
-    setup_plt()
+    The blitting algorithm needs these artists for its optimizations.
+    This function could probably contain what is currently in main().
 
-    fig: Figure = plt.figure(figsize=(9, 4.5), dpi=140)
-    plt_1: Axes = fig.add_subplot(121)
-    plt_2: Axes = fig.add_subplot(122)
+    Parameters
+    ----------
+    arrows : Quiver
+        The vector arrows
+    info : Text
+        The text stating the cross product
+    line : Line2D
+        Line plotting cross product
 
-    format_plt_1(plt_1)
-    format_plt_2(plt_2)
-
-    (arrows, info) = plot_quiver(plt_1)
-    line = plot_cross_prod_line(plt_2)
-
-    # Include line_dict and info under plt_x in future
-    # plt_dict = {"plt_1": plt_1, "plt_2": plt_2}
-
-    line_dict: LineDict = {"line": line, "x_data": [], "y_data": []}
-
-    format_plt()
-
-    anim = FuncAnimation(
-        fig,
-        animate,
-        init_func=init_anim_factory(arrows, info, line),
-        fargs=(arrows, info, line_dict),
-        frames=np.linspace(0, math.pi, 128),
-        interval=1000 / 30,
-        repeat=False)
-
-    fig_manager: Optional[FigureManagerQT] = plt.get_current_fig_manager()
-    if fig_manager is not None:
-        fig_manager.set_window_title("Cross Product Animation")
-
-    plt.draw()
-    plt.show()
-
-
-def init_anim_factory(arrows: Quiver, info: Text, line: Line2D) -> Callable:
-    def init_anim() -> List[Artist]:
-        return [arrows, info, line]
-    return init_anim
+    Returns
+    -------
+    Callable
+        The function called by FuncAnimation
+    """
+    return lambda: [arrows, info, line]
 
 
 def update_plt_1(arrows: Quiver,
                  info: Text, theta: float) -> float:
+    """Update the vector plot with new angles and re-calculate cross product.
+
+    Parameters
+    ----------
+    arrows : Quiver
+        The vector arrows
+    info : Text
+        The text stating the cross product
+    theta : float
+        The angle above and below the x-axis for each vector
+
+    Returns
+    -------
+    float
+        The cross product at this angle
+    """
     x_1, y_1 = (MAG_1 *
                 math.cos(theta), MAG_1 *
                 math.sin(theta))
@@ -325,7 +366,24 @@ def update_plt_1(arrows: Quiver,
     return cross_prod
 
 
-def update_plt_2(line_dict: LineDict, theta, cross_prod):
+def update_plt_2(line_dict: LineDict, theta: float,
+                 cross_prod: float) -> Line2D:
+    """Update the line plotting cross product as a function of theta.
+
+    Parameters
+    ----------
+    line_dict : LineDict
+        Has the line object and associated x and y data
+    theta : float
+        The angle above and below the x-axis for each vector
+    cross_prod : float
+        The calculated cross product
+
+    Returns
+    -------
+    Line2D
+        The actual line object
+    """
     line_dict["x_data"].append(theta)
     line_dict["y_data"].append(cross_prod)
 
@@ -334,12 +392,69 @@ def update_plt_2(line_dict: LineDict, theta, cross_prod):
     return line_dict["line"]
 
 
-def animate(theta: float, arrows: Quiver, info: Text, line_dict: LineDict):
+def animate(theta: float, arrows: Quiver, info: Text,
+            line_dict: LineDict) -> List[Artist]:
+    """Update all plots with new data.
+
+    Parameters
+    ----------
+    theta : float
+        The angle above and below the x-axis for each vector
+    arrows : Quiver
+        The vector arrows
+    info : Text
+        The text stating the cross product
+    line_dict : LineDict
+        Has the line object and associated x and y data
+
+    Returns
+    -------
+    List[Artist]
+        The updated artists
+    """
     cross_prod = update_plt_1(arrows, info, theta)
 
     update_plt_2(line_dict, theta, cross_prod)
 
     return [arrows, info, line_dict["line"]]
+
+
+def main() -> None:
+    """Run all executable code."""
+    setup_plt()
+
+    fig: Figure = plt.figure(figsize=(9, 4.5), dpi=140)
+    plt_1: Axes = fig.add_subplot(121)
+    plt_2: Axes = fig.add_subplot(122)
+
+    format_plt_1(plt_1)
+    format_plt_2(plt_2)
+
+    (arrows, info) = plot_quiver(plt_1)
+    line = plot_cross_prod_line(plt_2)
+
+    # Include line_dict and info under plt_x in future
+    # plt_dict = {"plt_1": plt_1, "plt_2": plt_2}
+
+    line_dict: LineDict = {"line": line, "x_data": [], "y_data": []}
+
+    format_plt()
+
+    anim = FuncAnimation(  # pylint: disable=unused-variable
+        fig,
+        animate,
+        init_func=init_anim_factory(arrows, info, line),
+        fargs=(arrows, info, line_dict),
+        frames=np.linspace(0, math.pi, 128),
+        interval=1000 / 30,
+        repeat=False)
+
+    fig_manager: Optional[FigureManagerQT] = plt.get_current_fig_manager()
+    if fig_manager is not None:
+        fig_manager.set_window_title("Cross Product Animation")
+
+    plt.draw()
+    plt.show()
 
 
 if __name__ == "__main__":
