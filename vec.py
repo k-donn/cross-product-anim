@@ -54,13 +54,13 @@ class MultiplePi:
 
     Attributes
     ----------
-    denominator : int
+    denominator : `int`
         The denominator of the multiples desired.
 
-    base : float, optional
+    base : `float`, optional
         Number to find multiples of, by default math.pi
 
-    symbol : str, optional
+    symbol : `str`, optional
         Symbol to place in string of multiple, by default r"\pi
 
     """
@@ -105,9 +105,9 @@ class MultiplePi:
 
             Parameters
             ----------
-            theta : float
+            theta : `float`
                 The angle in radians to be transformed
-            _ : int
+            _ : `int`
                 Index of the tick on the axis
 
             Returns
@@ -159,9 +159,9 @@ class MultiplePi:
 
         Parameters
         ----------
-        int_1 : float
+        int_1 : `float`
             First integer
-        int_2 : float
+        int_2 : `float`
             Second integer
 
         Returns
@@ -190,7 +190,7 @@ def format_plt_1(plt_1: Axes) -> None:
 
     Parameters
     ----------
-    plt_1 : Axes
+    plt_1 : `Axes`
         The Axes object describing the subplot
     """
     v_patch = Patch(color="r", label=r"$\vec{v}$")
@@ -221,7 +221,7 @@ def format_plt_2(plt_2: Axes) -> None:
 
     Parameters
     ----------
-    plt_2 : Axes
+    plt_2 : `Axes`
         The Axes object describing the subplot
     """
     x_axis: XAxis = plt_2.get_xaxis()
@@ -247,7 +247,7 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
 
     Parameters
     ----------
-    axes : Axes
+    axes : `Axes`
         The object describing the subplot
 
     Returns
@@ -285,7 +285,7 @@ def plot_cross_prod_line(plt_2: Axes) -> Line2D:
 
     Parameters
     ----------
-    plt_2 : Axes
+    plt_2 : `Axes`
         The Axes object describing the graph
 
     Returns
@@ -314,11 +314,11 @@ def init_anim_factory(arrows: Quiver, info: Text,
 
     Parameters
     ----------
-    arrows : Quiver
+    arrows : `Quiver`
         The vector arrows
-    info : Text
+    info : `Text`
         The text stating the cross product
-    line : Line2D
+    line : `Line2D`
         Line plotting cross product
 
     Returns
@@ -335,11 +335,11 @@ def update_plt_1(arrows: Quiver,
 
     Parameters
     ----------
-    arrows : Quiver
+    arrows : `Quiver`
         The vector arrows
-    info : Text
+    info : `Text`
         The text stating the cross product
-    theta : float
+    theta : `float`
         The angle above and below the x-axis for each vector
 
     Returns
@@ -372,11 +372,11 @@ def update_plt_2(line_dict: LineDict, theta: float,
 
     Parameters
     ----------
-    line_dict : LineDict
+    line_dict : `LineDict`
         Has the line object and associated x and y data
-    theta : float
+    theta : `float`
         The angle above and below the x-axis for each vector
-    cross_prod : float
+    cross_prod : `float`
         The calculated cross product
 
     Returns
@@ -398,13 +398,13 @@ def animate(theta: float, arrows: Quiver, info: Text,
 
     Parameters
     ----------
-    theta : float
+    theta : `float`
         The angle above and below the x-axis for each vector
-    arrows : Quiver
+    arrows : `Quiver`
         The vector arrows
-    info : Text
+    info : `Text`
         The text stating the cross product
-    line_dict : LineDict
+    line_dict : `LineDict`
         Has the line object and associated x and y data
 
     Returns
