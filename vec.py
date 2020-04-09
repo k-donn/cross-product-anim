@@ -77,7 +77,7 @@ class MultiplePi:
 
         Returns
         -------
-        MultipleLocator
+        `MultipleLocator`
             The object used to space the ticks
         """
         return MultipleLocator(self.base / self.denominator)
@@ -87,7 +87,7 @@ class MultiplePi:
 
         Returns
         -------
-        FuncFormatter
+        `FuncFormatter`
             Used to insert the symbol into the multiples
         """
         return FuncFormatter(self._make_formatter())
@@ -97,7 +97,7 @@ class MultiplePi:
 
         Returns
         -------
-        Callable[[float, Any], str]
+        `Callable[[float, Any], str]`
             Accpes a value and a position parameter and transforms them
         """
         def _fmt(theta, _) -> str:
@@ -112,7 +112,7 @@ class MultiplePi:
 
             Returns
             -------
-            str
+            `str`
                 The final label to be shown on the axis
             """
             denom = self.denominator
@@ -161,12 +161,13 @@ class MultiplePi:
         ----------
         int_1 : `float`
             First integer
+
         int_2 : `float`
             Second integer
 
         Returns
         -------
-        float
+        `float`
             The largest positive integer that divides each of the integers
         """
         while int_2:
@@ -252,7 +253,7 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
 
     Returns
     -------
-    Tuple[Quiver, Text]
+    `Tuple[Quiver, Text]`
         The quiver objects as well as the cross product text
     """
     x_1, y_1 = (MAG_1 *
@@ -290,7 +291,7 @@ def plot_cross_prod_line(plt_2: Axes) -> Line2D:
 
     Returns
     -------
-    Line2D
+    `Line2D`
         The object describing the plotted line
     """
     artists: List[Any] = plt_2.plot(
@@ -316,14 +317,16 @@ def init_anim_factory(arrows: Quiver, info: Text,
     ----------
     arrows : `Quiver`
         The vector arrows
+
     info : `Text`
         The text stating the cross product
+
     line : `Line2D`
         Line plotting cross product
 
     Returns
     -------
-    Callable
+    `Callable[..., List[Artist]]`
         The function called by FuncAnimation
     """
     return lambda: [arrows, info, line]
@@ -337,14 +340,16 @@ def update_plt_1(arrows: Quiver,
     ----------
     arrows : `Quiver`
         The vector arrows
+
     info : `Text`
         The text stating the cross product
+
     theta : `float`
         The angle above and below the x-axis for each vector
 
     Returns
     -------
-    float
+    `float`
         The cross product at this angle
     """
     x_1, y_1 = (MAG_1 *
@@ -374,14 +379,16 @@ def update_plt_2(line_dict: LineDict, theta: float,
     ----------
     line_dict : `LineDict`
         Has the line object and associated x and y data
+
     theta : `float`
         The angle above and below the x-axis for each vector
+
     cross_prod : `float`
         The calculated cross product
 
     Returns
     -------
-    Line2D
+    `Line2D`
         The actual line object
     """
     line_dict["x_data"].append(theta)
@@ -400,16 +407,19 @@ def animate(theta: float, arrows: Quiver, info: Text,
     ----------
     theta : `float`
         The angle above and below the x-axis for each vector
+
     arrows : `Quiver`
         The vector arrows
+
     info : `Text`
         The text stating the cross product
+
     line_dict : `LineDict`
         Has the line object and associated x and y data
 
     Returns
     -------
-    List[Artist]
+    `List[Artist]`
         The updated artists
     """
     cross_prod = update_plt_1(arrows, info, theta)
