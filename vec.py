@@ -28,16 +28,18 @@ from matplotlib.text import Text
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 
 # TODO
-# Add bound checking for GCD
-# Refactor out x_1, x_... calculation to function
-# Fix formatting for newlines in docstrings
-# Extract formatting class to its own file?
+# Extract formatting class to its own PyPi package?
 # Command line args for vectors' magnitudes?
 # Make graph sizing generated?
 # Move main() initialization to init_anim()
 
 MAG_1 = 4
 MAG_2 = 3
+
+# The components of a vector
+Vector = Tuple[float, float]
+# Two vectors together
+VectorPair = Tuple[Vector, Vector]
 
 
 class LineDict(TypedDict):
@@ -169,10 +171,40 @@ class MultiplePi:
         -------
         `float`
             The largest positive integer that divides each of the integers
+
+        Raises
+        ------
+        `ValueError`
+            The greatest common divisor can only be of positive numbers
         """
         while int_2:
             int_1, int_2 = int_2, int_1 % int_2
         return int_1
+
+
+def calc_vector_comps(theta_1: float, theta_2: float) -> VectorPair:
+    """Calculate the components of two vectors with constant magnitude.
+
+    Parameters
+    ----------
+    theta_1 : `float`
+        The first angle
+    theta_2 : `float`
+        The second angle
+
+    Returns
+    -------
+    `VectorPair`
+        The components of the vectors
+    """
+    x_1, y_1 = (MAG_1 *
+                math.cos(theta_1), MAG_1 *
+                math.sin(theta_1))
+    x_2, y_2 = (MAG_2 *
+                math.cos(theta_2), MAG_2 *
+                math.sin(theta_2))
+
+    return ((x_1, y_1), (x_2, y_2))
 
 
 def setup_plt() -> None:
@@ -256,12 +288,7 @@ def plot_quiver(axes: Axes) -> Tuple[Quiver, Text]:
     `Tuple[Quiver, Text]`
         The quiver objects as well as the cross product text
     """
-    x_1, y_1 = (MAG_1 *
-                math.cos(0), MAG_1 *
-                math.sin(0))
-    x_2, y_2 = (MAG_2 *
-                math.cos(0), MAG_2 *
-                math.sin(0))
+    ((x_1, y_1), (x_2, y_2)) = calc_vector_comps(0, 0)
 
     vecs: np.ndarray = np.array([[0, 0, x_1, y_1], [0, 0, x_2, y_2]])
     x_origins, y_origins, x_comps, y_comps = zip(*vecs)
@@ -352,13 +379,7 @@ def update_plt_1(arrows: Quiver,
     `float`
         The cross product at this angle
     """
-    x_1, y_1 = (MAG_1 *
-                math.cos(theta), MAG_1 *
-                math.sin(theta))
-    x_2, y_2 = (MAG_2 *
-                math.cos(-theta), MAG_2 *
-                math.sin(-theta))
-
+    ((x_1, y_1), (x_2, y_2)) = calc_vector_comps(theta, -theta)
     vecs: np.ndarray = np.array([[x_1, y_1], [x_2, y_2]])
     x_comps, y_comps = zip(*vecs)
 
