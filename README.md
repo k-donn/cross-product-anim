@@ -8,10 +8,15 @@ An animation of the cross product of two vectors as they rotate about the origin
 
 ## Running
 
--   Create `conda` env from spec-file.txt (see [Install Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html))
--   `pip` can also be configured with requirements.txt
--   From the root of the folder,
-
 ```
-python3.8 ./vec.py
+usage: python3.8 vec.py [-h] mag1 mag2
+
+Show an animation of vector cross products.
+
+positional arguments:
+  mag1        Magnitude of vector 1
+  mag2        Magnitude of vector 2
+
+options:
+  -h, --help  show this help message and exit
 ```
